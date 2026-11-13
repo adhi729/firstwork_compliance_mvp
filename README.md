@@ -4,17 +4,14 @@ A tenant-scoped compliance service built with Django REST Framework, PostgreSQL,
 and a pure-Python rule engine. The MVP includes immutable rule/check versions, explainable
 evaluation, SQL-backed eligible-contract queries, and API-key authentication.
 
-## Requirements
+<img width="1248" height="732" alt="Screenshot 2026-11-13 at 7 49 21 AM" src="https://github.com/user-attachments/assets/521bd849-3793-4125-8a41-99f604432530" />
 
-- macOS with Docker Desktop, OrbStack, or Colima
-- Docker Compose v2 and `make`
-- Python 3.12 and `uv` are optional on the host; application commands run in containers
 
 ## Start the local stack
 
 ```sh
 make init
-make up
+make up-async
 ```
 
 The API is available at <http://localhost:8000>, liveness at `/healthz`, and dependency
@@ -33,7 +30,7 @@ scripts only run when the Postgres data volume is first created.
 | --- | --- |
 | `make init` | Copy `.env.example` to `.env` without replacing an existing file |
 | `make up` | Build and start PostgreSQL, Redis, Temporal, migrations, and API |
-| `make up-async` | Also start the Temporal worker and outbox dispatcher |
+| `make up-async` | Also start the Temporal worker |
 | `make benchmark` | Run the 100k-rule fixture, Temporal bulk jobs, and latency benchmark |
 | `make down` | Stop services, including the async profile |
 | `make logs` | Follow API logs |

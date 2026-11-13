@@ -4,7 +4,7 @@ from asgiref.sync import async_to_sync
 from django.db import connection, transaction
 from django.db.models import Count, Max
 from django.utils import timezone
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import OpenApiParameter, OpenApiTypes, extend_schema
 from rest_framework import serializers, status
 from rest_framework.exceptions import NotFound
 from rest_framework.request import Request
@@ -75,6 +75,15 @@ class StartBulkEvaluationView(APIView):
     @extend_schema(
         request=None,
         responses={202: EvaluationJobSerializer},
+        parameters=[
+            OpenApiParameter(
+                "Location",
+                OpenApiTypes.STR,
+                OpenApiParameter.HEADER,
+                response=[202],
+                description="Relative URL for polling the evaluation job.",
+            )
+        ],
         description=(
             "Queue evaluation of the tenant's contracts using the check version pinned "
             "when the job is created. Contracts created later are excluded."

@@ -5,7 +5,7 @@ import uuid
 
 from django.db import IntegrityError, transaction
 from django.utils import timezone
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import OpenApiParameter, OpenApiTypes, extend_schema
 from rest_framework import serializers, status
 from rest_framework.exceptions import NotFound
 from rest_framework.request import Request
@@ -16,6 +16,7 @@ from apps.directory.models import Contract
 from apps.evaluation.models import ComplianceCheck, EvaluationResult
 from apps.evaluation.services import evaluate_check_version
 from apps.tenants.errors import IdempotencyConflictAPIError
+from apps.tenants.schema import problem_response
 
 
 class EvaluateInputSerializer(serializers.Serializer):
@@ -74,7 +75,25 @@ def _tenant_id(request: Request) -> str:
 class EvaluateCheckView(APIView):
     @extend_schema(
         request=EvaluateInputSerializer,
-        responses={200: EvaluationOutputSerializer},
+        parameters=[
+            OpenApiParameter(
+                "Idempotency-Key",
+                OpenApiTypes.STR,
+                OpenApiParameter.HEADER,
+                description=(
+                    "Optional tenant-scoped key of up to 255 characters. Reusing the key "
+                    "with the same check and contract returns the stored result; using it "
+                    "for a different request returns 409. If omitted, a key is generated."
+                ),
+            )
+        ],
+        responses={
+            200: EvaluationOutputSerializer,
+            (400, "application/json"): problem_response("Invalid request or key."),
+            (409, "application/json"): problem_response(
+                "Key already used for a different request; code IDEMPOTENCY_CONFLICT."
+            ),
+        },
     )
     def post(self, request: Request, check_id: int) -> Response:
         serializer = EvaluateInputSerializer(data=request.data)

@@ -20,6 +20,7 @@ from apps.tenants.errors import (
     RuleDefinitionAPIError,
     VersionMismatchAPIError,
 )
+from apps.tenants.schema import ETAG, IF_MATCH, problem_response
 from domain.engine import RuleError
 
 logger = logging.getLogger(__name__)
@@ -65,6 +66,14 @@ class CheckInputSerializer(serializers.Serializer):
         if len(set(values)) != len(values):
             raise serializers.ValidationError("Rule ids must be unique.")
         return values
+
+
+class RuleCreateInputSerializer(RuleInputSerializer):
+    name = serializers.CharField(max_length=200)
+
+
+class CheckCreateInputSerializer(CheckInputSerializer):
+    name = serializers.CharField(max_length=200)
 
 
 class RuleOutputSerializer(serializers.Serializer):
@@ -239,8 +248,9 @@ def _create_check_version(
 
 class RuleCollectionView(APIView):
     @extend_schema(
-        request=RuleInputSerializer,
+        request=RuleCreateInputSerializer,
         responses={201: RuleOutputSerializer},
+        parameters=[ETAG],
         description=(
             "Create an active tenant rule at immutable schema version 2. "
             "Rule references are accepted only when RULE_REFERENCES_ENABLED is true."
@@ -293,7 +303,7 @@ class RuleDetailView(APIView):
         except Rule.DoesNotExist as exc:
             raise NotFound("Rule not found.", code="RULE_NOT_FOUND") from exc
 
-    @extend_schema(responses={200: RuleOutputSerializer})
+    @extend_schema(responses={200: RuleOutputSerializer}, parameters=[ETAG])
     def get(self, request: Request, rule_id: int) -> Response:
         rule = self.get_object(request, rule_id)
         if rule.current_version is None:
@@ -309,7 +319,13 @@ class RuleDetailView(APIView):
 
     @extend_schema(
         request=RuleInputSerializer,
-        responses={200: RuleOutputSerializer},
+        responses={
+            200: RuleOutputSerializer,
+            (412, "application/json"): problem_response(
+                "Missing, invalid, or stale If-Match; code VERSION_MISMATCH."
+            ),
+        },
+        parameters=[IF_MATCH, ETAG],
         description=(
             "Create a new immutable rule version. Referenced rule versions remain pinned "
             "until explicitly changed in a later parent version."
@@ -421,7 +437,7 @@ class RuleArchiveView(APIView):
 
 class CheckCollectionView(APIView):
     @extend_schema(
-        request=CheckInputSerializer,
+        request=CheckCreateInputSerializer,
         responses={201: CheckOutputSerializer},
     )
     def post(self, request: Request) -> Response:
@@ -483,7 +499,17 @@ class CheckDetailView(APIView):
 
     @extend_schema(
         request=CheckInputSerializer,
-        responses={200: CheckOutputSerializer},
+        responses={
+            200: CheckOutputSerializer,
+            (412, "application/json"): problem_response(
+                "Missing, invalid, or stale If-Match; code VERSION_MISMATCH."
+            ),
+        },
+        parameters=[IF_MATCH, ETAG],
+        description=(
+            "Create a new pinned check version. Obtain the current version from the "
+            "check's current_version field; the check GET response does not return an ETag."
+        ),
     )
     def put(self, request: Request, check_id: int) -> Response:
         serializer = CheckInputSerializer(data=request.data)

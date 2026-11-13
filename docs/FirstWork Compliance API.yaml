@@ -8,6 +8,20 @@ paths:
   /api/v1/companies:
     get:
       operationId: companies_list
+      parameters:
+      - in: query
+        name: cursor
+        schema:
+          type: string
+        description: Signed next_cursor from a previous page of the same query.
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 1000
+          default: 100
+        description: Maximum number of results to return.
       tags:
       - v1
       security:
@@ -64,11 +78,42 @@ paths:
       description: Return contracts that pass a rule or every pinned rule in a check.
         Pagination is signed keyset-based; UNKNOWN outcomes are excluded.
       parameters:
+      - in: query
+        name: check_id
+        schema:
+          type: integer
+          minimum: 1
+        description: Check to evaluate; specify exactly one of rule_id or check_id.
       - in: path
         name: company_id
         schema:
           type: integer
         required: true
+      - in: query
+        name: cursor
+        schema:
+          type: string
+        description: Signed next_cursor from a previous page of the same query.
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 1000
+          default: 100
+        description: Maximum number of results to return.
+      - in: query
+        name: rule_id
+        schema:
+          type: integer
+          minimum: 1
+        description: Rule to evaluate; specify exactly one of rule_id or check_id.
+      - in: query
+        name: version
+        schema:
+          type: integer
+          minimum: 1
+        description: Rule version; only valid with rule_id. Defaults to current version.
       tags:
       - v1
       security:
@@ -89,7 +134,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CheckInput'
+              $ref: '#/components/schemas/CheckCreateInput'
         required: true
       security:
       - TenantAPIKey: []
@@ -122,7 +167,17 @@ paths:
           description: ''
     put:
       operationId: v1_compliance_checks_update
+      description: Create a new pinned check version. Obtain the current version from
+        the check's current_version field; the check GET response does not return
+        an ETag.
       parameters:
+      - in: header
+        name: If-Match
+        schema:
+          type: string
+        description: Current resource version, for example "1". A missing, invalid,
+          or stale version returns 412 VERSION_MISMATCH.
+        required: true
       - in: path
         name: check_id
         schema:
@@ -140,15 +195,34 @@ paths:
       - TenantAPIKey: []
       responses:
         '200':
+          headers:
+            ETag:
+              schema:
+                type: string
+              description: The current version as a quoted entity tag, for example
+                "1".
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/CheckOutput'
           description: ''
+        '412':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+          description: Missing, invalid, or stale If-Match; code VERSION_MISMATCH.
   /api/v1/compliance-checks/{check_id}/evaluate:
     post:
       operationId: v1_compliance_checks_evaluate_create
       parameters:
+      - in: header
+        name: Idempotency-Key
+        schema:
+          type: string
+        description: Optional tenant-scoped key of up to 255 characters. Reusing the
+          key with the same check and contract returns the stored result; using it
+          for a different request returns 409. If omitted, a key is generated.
       - in: path
         name: check_id
         schema:
@@ -171,9 +245,62 @@ paths:
               schema:
                 $ref: '#/components/schemas/EvaluationOutput'
           description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+          description: Invalid request or key.
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+          description: Key already used for a different request; code IDEMPOTENCY_CONFLICT.
+  /api/v1/compliance-checks/{check_id}/evaluate-bulk:
+    post:
+      operationId: v1_compliance_checks_evaluate_bulk_create
+      description: Queue evaluation of the tenant's contracts using the check version
+        pinned when the job is created. Contracts created later are excluded.
+      parameters:
+      - in: path
+        name: check_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - v1
+      security:
+      - TenantAPIKey: []
+      responses:
+        '202':
+          headers:
+            Location:
+              schema:
+                type: string
+              description: Relative URL for polling the evaluation job.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvaluationJob'
+          description: ''
   /api/v1/contracts:
     get:
       operationId: contracts_list
+      parameters:
+      - in: query
+        name: cursor
+        schema:
+          type: string
+        description: Signed next_cursor from a previous page of the same query.
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 1000
+          default: 100
+        description: Maximum number of results to return.
       tags:
       - v1
       security:
@@ -224,6 +351,27 @@ paths:
               schema:
                 $ref: '#/components/schemas/ContractOutput'
           description: ''
+  /api/v1/evaluation-jobs/{job_id}:
+    get:
+      operationId: v1_evaluation_jobs_retrieve
+      description: Return status and contract progress for a tenant-owned bulk evaluation.
+      parameters:
+      - in: path
+        name: job_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - v1
+      security:
+      - TenantAPIKey: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvaluationJob'
+          description: ''
   /api/v1/rules:
     post:
       operationId: v1_rules_create
@@ -235,12 +383,18 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RuleInput'
+              $ref: '#/components/schemas/RuleCreateInput'
         required: true
       security:
       - TenantAPIKey: []
       responses:
         '201':
+          headers:
+            ETag:
+              schema:
+                type: string
+              description: The current version as a quoted entity tag, for example
+                "1".
           content:
             application/json:
               schema:
@@ -261,6 +415,12 @@ paths:
       - TenantAPIKey: []
       responses:
         '200':
+          headers:
+            ETag:
+              schema:
+                type: string
+              description: The current version as a quoted entity tag, for example
+                "1".
           content:
             application/json:
               schema:
@@ -271,6 +431,13 @@ paths:
       description: Create a new immutable rule version. Referenced rule versions remain
         pinned until explicitly changed in a later parent version.
       parameters:
+      - in: header
+        name: If-Match
+        schema:
+          type: string
+        description: Current resource version, for example "1". A missing, invalid,
+          or stale version returns 412 VERSION_MISMATCH.
+        required: true
       - in: path
         name: rule_id
         schema:
@@ -288,11 +455,23 @@ paths:
       - TenantAPIKey: []
       responses:
         '200':
+          headers:
+            ETag:
+              schema:
+                type: string
+              description: The current version as a quoted entity tag, for example
+                "1".
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/RuleOutput'
           description: ''
+        '412':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+          description: Missing, invalid, or stale If-Match; code VERSION_MISMATCH.
   /api/v1/rules/{rule_id}/archive:
     post:
       operationId: archiveRule
@@ -358,6 +537,20 @@ paths:
   /api/v1/workers:
     get:
       operationId: workers_list
+      parameters:
+      - in: query
+        name: cursor
+        schema:
+          type: string
+        description: Signed next_cursor from a previous page of the same query.
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 1000
+          default: 100
+        description: Maximum number of results to return.
       tags:
       - v1
       security:
@@ -410,6 +603,24 @@ paths:
           description: ''
 components:
   schemas:
+    CheckCreateInput:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+          default: ''
+        rule_ids:
+          type: array
+          items:
+            type: integer
+            minimum: 1
+          maxItems: 1000
+      required:
+      - name
+      - rule_ids
     CheckInput:
       type: object
       properties:
@@ -1179,6 +1390,49 @@ components:
       - property
       - reason
       - status
+    EvaluationJob:
+      type: object
+      properties:
+        job_id:
+          type: integer
+        check_id:
+          type: integer
+        check_version:
+          type: integer
+        status:
+          $ref: '#/components/schemas/StatusEnum'
+        total_contracts:
+          type: integer
+        completed_contracts:
+          type: integer
+        progress_percent:
+          type: integer
+          readOnly: true
+        error:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        started_at:
+          type: string
+          format: date-time
+          nullable: true
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - check_id
+      - check_version
+      - completed_at
+      - completed_contracts
+      - created_at
+      - error
+      - job_id
+      - progress_percent
+      - started_at
+      - status
+      - total_contracts
     EvaluationOutput:
       type: object
       properties:
@@ -1222,6 +1476,41 @@ components:
       - passed
       - rules
       - unknown
+    ProblemDetail:
+      type: object
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        code:
+          type: string
+        detail:
+          type: string
+        errors: {}
+      required:
+      - code
+      - status
+      - title
+      - type
+    RuleCreateInput:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+          default: ''
+        definition:
+          description: Expression tree with conditions, AND/OR groups, and (when enabled)
+            rule_ref nodes containing a rule_id and optional version. The user. entity
+            prefix is accepted as an alias for worker. and stored canonically.
+      required:
+      - definition
+      - name
     RuleDependentOutput:
       type: object
       properties:
@@ -1321,6 +1610,18 @@ components:
       - definition
       - schema_version
       - version
+    StatusEnum:
+      enum:
+      - PENDING
+      - RUNNING
+      - COMPLETED
+      - FAILED
+      type: string
+      description: |-
+        * `PENDING` - Pending
+        * `RUNNING` - Running
+        * `COMPLETED` - Completed
+        * `FAILED` - Failed
     WorkerOutput:
       type: object
       properties:

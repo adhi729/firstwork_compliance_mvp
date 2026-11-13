@@ -3,7 +3,7 @@ from typing import Any
 
 from django.db import connection
 from django.utils import timezone
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import serializers, status
 from rest_framework.exceptions import NotFound, ParseError
 from rest_framework.request import Request
@@ -15,6 +15,7 @@ from apps.evaluation.models import CheckVersionRule, ComplianceCheck
 from apps.rules.models import Rule, RuleVersion
 from apps.rules.services import get_expanded_rule_definition
 from apps.tenants.cursors import decode_eligibility_cursor, encode_eligibility_cursor
+from apps.tenants.schema import PAGINATION_PARAMETERS
 from domain.engine.sql import SQLFragment, compile_all, compile_definition
 
 logger = logging.getLogger(__name__)
@@ -143,6 +144,27 @@ def _eligible_query(
 class EligibleContractsView(APIView):
     @extend_schema(
         responses={200: EligibleContractsOutputSerializer},
+        parameters=[
+            *PAGINATION_PARAMETERS,
+            OpenApiParameter(
+                "rule_id",
+                {"type": "integer", "minimum": 1},
+                OpenApiParameter.QUERY,
+                description="Rule to evaluate; specify exactly one of rule_id or check_id.",
+            ),
+            OpenApiParameter(
+                "check_id",
+                {"type": "integer", "minimum": 1},
+                OpenApiParameter.QUERY,
+                description="Check to evaluate; specify exactly one of rule_id or check_id.",
+            ),
+            OpenApiParameter(
+                "version",
+                {"type": "integer", "minimum": 1},
+                OpenApiParameter.QUERY,
+                description="Rule version; only valid with rule_id. Defaults to current version.",
+            ),
+        ],
         description=(
             "Return contracts that pass a rule or every pinned rule in a check. "
             "Pagination is signed keyset-based; UNKNOWN outcomes are excluded."

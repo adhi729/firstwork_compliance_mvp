@@ -85,7 +85,7 @@ All endpoints are under `/api/v1` and require a bearer API key.
 | `GET` | `/rules/{id}/versions` | List rule versions |
 | `GET` | `/rules/{id}/dependents` | List immutable rule versions that reference this rule |
 | `POST` | `/rules/{id}/archive` | Archive a rule |
-| `POST`, `GET` | `/compliance-checks` | Create a check or list checks |
+| `POST` | `/compliance-checks` | Create a check |
 | `GET`, `PUT` | `/compliance-checks/{id}` | Read a check or create a new pinned version |
 | `POST` | `/compliance-checks/{id}/evaluate` | Evaluate a contract with explainable results |
 | `POST` | `/compliance-checks/{id}/evaluate-bulk` | Start an asynchronous evaluation of tenant contracts |
@@ -94,7 +94,9 @@ All endpoints are under `/api/v1` and require a bearer API key.
 
 Collection reads use signed keyset cursors (`limit` defaults to 100 and is capped at 1000).
 The cursor is bound to the tenant and resource; it cannot be reused for a different list
-or eligibility query. Errors use `application/problem+json`.
+or eligibility query. Errors have a problem-detail-shaped body. API view errors are
+rendered as `application/json`; authentication errors returned by tenant middleware use
+`application/problem+json`.
 
 The assignment's `User` entity is represented by the `Worker` model. Property entity
 prefixes are case-insensitive, and `user.` is accepted as an alias for `worker.`; inputs
@@ -128,12 +130,46 @@ Create a rule:
 }
 ```
 
-Rule and check updates require `If-Match` with the current ETag. Each rule version is
-immutable. A check version pins the exact immutable rule versions selected when it is
-created, so later rule edits do not change existing check behavior. Evaluations support
-`Idempotency-Key` and return a condition-level trace and the `as_of` instant used.
+Rule and check updates require an `If-Match` header with the current version. Rule
+creation, retrieval, and updates return that version in an `ETag` header. Check retrieval
+returns the version in the `current_version` response field, not an `ETag`; a successful
+check update returns an `ETag`. A missing, invalid, or stale `If-Match` returns `412`
+with code `VERSION_MISMATCH`. Fetch the latest version and retry.
+
+For example, after setting `API_KEY` to a tenant API key, fetch a rule and use its
+returned ETag for the update:
+
+```sh
+curl -i -H "Authorization: Bearer $API_KEY" \
+  http://localhost:8000/api/v1/rules/42
+
+curl -X PUT http://localhost:8000/api/v1/rules/42 \
+  -H "Authorization: Bearer $API_KEY" \
+  -H 'Content-Type: application/json' \
+  -H 'If-Match: "1"' \
+  -d '{"name":"Minimum working age","definition":{"property":"worker.age","operator":">=","value":18}}'
+```
+
+Replace `"1"` with the current ETag from the GET response. For a check, fetch
+`GET /api/v1/compliance-checks/{id}`, then use its `current_version` in `If-Match`
+when sending a `PUT` containing `rule_ids`; do not rely on a GET response ETag.
+
+Each rule version is immutable. A check version pins the exact immutable rule versions
+selected when it is created, so later rule edits do not change existing check behavior.
+Evaluations support `Idempotency-Key` and return a condition-level trace and the `as_of`
+instant used. Reusing the key for the same check and contract returns the stored result;
+using it for a different request returns `409` with code `IDEMPOTENCY_CONFLICT`.
 The evaluation response keeps the three-state `outcome` and adds `compliant`, which is
 true only for COMPLIANT. A false value can mean either NON_COMPLIANT or INDETERMINATE.
+
+The checked-in [OpenAPI specification](docs/FirstWork%20Compliance%20API.yaml) is a
+snapshot of the schema served at `/api/schema/`; `/api/docs/` uses that live schema.
+After changing API annotations or serializers, regenerate and validate the snapshot:
+
+```sh
+docker compose exec -T api python manage.py spectacular --validate \
+  --file "docs/FirstWork Compliance API.yaml"
+```
 
 ### Rule references and staged rollout
 

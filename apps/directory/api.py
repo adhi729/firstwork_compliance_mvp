@@ -11,6 +11,7 @@ from rest_framework.views import APIView
 from apps.directory.countries import COUNTRY_CHOICES
 from apps.directory.models import Company, Contract, Worker
 from apps.tenants.cursors import decode_eligibility_cursor, encode_eligibility_cursor
+from apps.tenants.schema import PAGINATION_PARAMETERS
 
 
 class WorkerWriteSerializer(serializers.Serializer):
@@ -140,7 +141,11 @@ def _page(
 
 
 class WorkerCollectionView(APIView):
-    @extend_schema(operation_id="workers_list", responses={200: WorkerPageSerializer})
+    @extend_schema(
+        operation_id="workers_list",
+        responses={200: WorkerPageSerializer},
+        parameters=PAGINATION_PARAMETERS,
+    )
     def get(self, request: Request) -> Response:
         tenant_id = _tenant_id(request)
         return _page(
@@ -177,7 +182,11 @@ class WorkerDetailView(APIView):
 
 
 class CompanyCollectionView(APIView):
-    @extend_schema(operation_id="companies_list", responses={200: CompanyPageSerializer})
+    @extend_schema(
+        operation_id="companies_list",
+        responses={200: CompanyPageSerializer},
+        parameters=PAGINATION_PARAMETERS,
+    )
     def get(self, request: Request) -> Response:
         tenant_id = _tenant_id(request)
         return _page(
@@ -214,7 +223,11 @@ class CompanyDetailView(APIView):
 
 
 class ContractCollectionView(APIView):
-    @extend_schema(operation_id="contracts_list", responses={200: ContractPageSerializer})
+    @extend_schema(
+        operation_id="contracts_list",
+        responses={200: ContractPageSerializer},
+        parameters=PAGINATION_PARAMETERS,
+    )
     def get(self, request: Request) -> Response:
         tenant_id = _tenant_id(request)
         return _page(

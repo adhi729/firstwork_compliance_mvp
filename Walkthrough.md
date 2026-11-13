@@ -141,7 +141,8 @@ versioning; single and bulk evaluation; and eligible-contract queries.
 
 Collection endpoints use signed keyset cursors. Cursors are tenant- and resource-bound;
 the default page size is 100 and the maximum is 1,000. API errors use
-`application/problem+json`.
+problem-detail-shaped bodies. API view errors are rendered as `application/json`, while
+authentication errors returned by tenant middleware use `application/problem+json`.
 
 The PostgreSQL `migrator` role owns the schema and performs migrations. Runtime
 processes use the restricted `app_user` role, which does not own tables and does not

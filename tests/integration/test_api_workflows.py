@@ -77,6 +77,48 @@ class TestComplianceAPI:
         assert response.status_code == 201, response.data
         return response
 
+    def test_rule_and_check_update_preconditions(self):
+        rule = self._create_rule().data
+        rule_url = f"/api/v1/rules/{rule['id']}"
+        rule_body = {"definition": {"property": "worker.age", "operator": ">=", "value": 21}}
+        rule_read = self.client.get(rule_url)
+        assert rule_read["ETag"] == '"1"'
+        for headers in ({}, {"HTTP_IF_MATCH": "invalid"}, {"HTTP_IF_MATCH": '"2"'}):
+            response = self.client.put(rule_url, rule_body, format="json", **headers)
+            assert response.status_code == 412
+            assert response["Content-Type"] == "application/json"
+            assert response.data["code"] == "VERSION_MISMATCH"
+
+        updated_rule = self.client.put(
+            rule_url, rule_body, format="json", HTTP_IF_MATCH=rule_read["ETag"]
+        )
+        assert updated_rule.status_code == 200
+        assert updated_rule["ETag"] == '"2"'
+
+        check = self.client.post(
+            "/api/v1/compliance-checks",
+            {"name": "Adult check", "rule_ids": [rule["id"]]},
+            format="json",
+        )
+        assert check.status_code == 201
+        check_url = f"/api/v1/compliance-checks/{check.data['id']}"
+        check_read = self.client.get(check_url)
+        assert check_read.status_code == 200
+        assert "ETag" not in check_read
+        assert check_read.data["current_version"] == 1
+        check_body = {"rule_ids": [rule["id"]]}
+        missing = self.client.put(check_url, check_body, format="json")
+        assert missing.status_code == 412
+        assert missing.data["code"] == "VERSION_MISMATCH"
+        updated_check = self.client.put(
+            check_url,
+            check_body,
+            format="json",
+            HTTP_IF_MATCH=f'"{check_read.data["current_version"]}"',
+        )
+        assert updated_check.status_code == 200
+        assert updated_check["ETag"] == '"2"'
+
     def test_api_key_rule_version_check_evaluation_and_eligibility(self):
         rule_response = self._create_rule()
         rule = rule_response.data

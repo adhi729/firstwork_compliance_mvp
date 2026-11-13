@@ -1,0 +1,52 @@
+[project]
+name = "firstwork-compliance"
+version = "0.1.0"
+description = "Development scaffold for the FirstWork compliance service"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "Django>=5.1,<6.0",
+    "djangorestframework>=3.15,<4.0",
+    "drf-spectacular>=0.28,<1.0",
+    "dj-database-url>=2.2,<3.0",
+    "psycopg[binary]>=3.2,<4.0",
+    "redis>=5.0,<7.0",
+    "temporalio>=1.7,<2.0",
+    "gunicorn>=23.0,<24.0",
+]
+
+[dependency-groups]
+dev = [
+    "django-stubs[compatible-mypy]>=5.1,<6.0",
+    "hypothesis>=6.100,<7.0",
+    "mypy>=1.11,<2.0",
+    "pytest>=8.3,<9.0",
+    "pytest-django>=4.9,<5.0",
+    "ruff>=0.7,<1.0",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.dev"
+python_files = ["test_*.py"]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["**/migrations/*.py", ".venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "DJ"]
+
+[tool.mypy]
+python_version = "3.12"
+plugins = ["mypy_django_plugin.main"]
+ignore_missing_imports = true
+check_untyped_defs = true
+warn_unused_ignores = true
+
+[tool.django-stubs]
+django_settings_module = "config.settings.dev"

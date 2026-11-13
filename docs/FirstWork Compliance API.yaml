@@ -1,0 +1,1377 @@
+openapi: 3.0.3
+info:
+  title: FirstWork Compliance API
+  version: 1.0.0
+  description: Tenant-scoped compliance rules and evaluation API. Rule property entity
+    prefixes are case-insensitive; user. is an alias for worker. and is stored canonically.
+paths:
+  /api/v1/companies:
+    get:
+      operationId: companies_list
+      tags:
+      - v1
+      security:
+      - TenantAPIKey: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyPage'
+          description: ''
+    post:
+      operationId: companies_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompanyWrite'
+        required: true
+      security:
+      - TenantAPIKey: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyOutput'
+          description: ''
+  /api/v1/companies/{company_id}:
+    get:
+      operationId: companies_retrieve
+      parameters:
+      - in: path
+        name: company_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - v1
+      security:
+      - TenantAPIKey: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyOutput'
+          description: ''
+  /api/v1/companies/{company_id}/eligible-contracts:
+    get:
+      operationId: v1_companies_eligible_contracts_retrieve
+      description: Return contracts that pass a rule or every pinned rule in a check.
+        Pagination is signed keyset-based; UNKNOWN outcomes are excluded.
+      parameters:
+      - in: path
+        name: company_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - v1
+      security:
+      - TenantAPIKey: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EligibleContractsOutput'
+          description: ''
+  /api/v1/compliance-checks:
+    post:
+      operationId: v1_compliance_checks_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckInput'
+        required: true
+      security:
+      - TenantAPIKey: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckOutput'
+          description: ''
+  /api/v1/compliance-checks/{check_id}:
+    get:
+      operationId: v1_compliance_checks_retrieve
+      parameters:
+      - in: path
+        name: check_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - v1
+      security:
+      - TenantAPIKey: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckOutput'
+          description: ''
+    put:
+      operationId: v1_compliance_checks_update
+      parameters:
+      - in: path
+        name: check_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckInput'
+        required: true
+      security:
+      - TenantAPIKey: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckOutput'
+          description: ''
+  /api/v1/compliance-checks/{check_id}/evaluate:
+    post:
+      operationId: v1_compliance_checks_evaluate_create
+      parameters:
+      - in: path
+        name: check_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EvaluateInput'
+        required: true
+      security:
+      - TenantAPIKey: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvaluationOutput'
+          description: ''
+  /api/v1/contracts:
+    get:
+      operationId: contracts_list
+      tags:
+      - v1
+      security:
+      - TenantAPIKey: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContractPage'
+          description: ''
+    post:
+      operationId: contracts_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContractWrite'
+        required: true
+      security:
+      - TenantAPIKey: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContractOutput'
+          description: ''
+  /api/v1/contracts/{contract_id}:
+    get:
+      operationId: contracts_retrieve
+      parameters:
+      - in: path
+        name: contract_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - v1
+      security:
+      - TenantAPIKey: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContractOutput'
+          description: ''
+  /api/v1/rules:
+    post:
+      operationId: v1_rules_create
+      description: Create an active tenant rule at immutable schema version 2. Rule
+        references are accepted only when RULE_REFERENCES_ENABLED is true.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RuleInput'
+        required: true
+      security:
+      - TenantAPIKey: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuleOutput'
+          description: ''
+  /api/v1/rules/{rule_id}:
+    get:
+      operationId: v1_rules_retrieve
+      parameters:
+      - in: path
+        name: rule_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - v1
+      security:
+      - TenantAPIKey: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuleOutput'
+          description: ''
+    put:
+      operationId: v1_rules_update
+      description: Create a new immutable rule version. Referenced rule versions remain
+        pinned until explicitly changed in a later parent version.
+      parameters:
+      - in: path
+        name: rule_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RuleInput'
+        required: true
+      security:
+      - TenantAPIKey: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuleOutput'
+          description: ''
+  /api/v1/rules/{rule_id}/archive:
+    post:
+      operationId: archiveRule
+      parameters:
+      - in: path
+        name: rule_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - v1
+      security:
+      - TenantAPIKey: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/rules/{rule_id}/dependents:
+    get:
+      operationId: v1_rules_dependents_list
+      description: List immutable rule versions that directly pin a version of this
+        rule.
+      parameters:
+      - in: path
+        name: rule_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - v1
+      security:
+      - TenantAPIKey: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RuleDependentOutput'
+          description: ''
+  /api/v1/rules/{rule_id}/versions:
+    get:
+      operationId: v1_rules_versions_list
+      parameters:
+      - in: path
+        name: rule_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - v1
+      security:
+      - TenantAPIKey: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RuleVersionOutput'
+          description: ''
+  /api/v1/workers:
+    get:
+      operationId: workers_list
+      tags:
+      - v1
+      security:
+      - TenantAPIKey: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkerPage'
+          description: ''
+    post:
+      operationId: workers_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkerWrite'
+        required: true
+      security:
+      - TenantAPIKey: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkerOutput'
+          description: ''
+  /api/v1/workers/{worker_id}:
+    get:
+      operationId: workers_retrieve
+      parameters:
+      - in: path
+        name: worker_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - v1
+      security:
+      - TenantAPIKey: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkerOutput'
+          description: ''
+components:
+  schemas:
+    CheckInput:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+          default: ''
+        rule_ids:
+          type: array
+          items:
+            type: integer
+            minimum: 1
+          maxItems: 1000
+      required:
+      - rule_ids
+    CheckOutput:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        current_version:
+          type: integer
+          nullable: true
+        versions:
+          type: array
+          items:
+            $ref: '#/components/schemas/CheckVersionOutput'
+      required:
+      - current_version
+      - description
+      - id
+      - name
+      - versions
+    CheckVersionOutput:
+      type: object
+      properties:
+        version:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        rules:
+          type: array
+          items:
+            $ref: '#/components/schemas/CheckVersionRuleOutput'
+      required:
+      - created_at
+      - rules
+      - version
+    CheckVersionRuleOutput:
+      type: object
+      properties:
+        rule_id:
+          type: integer
+        version:
+          type: integer
+        rule_version_id:
+          type: integer
+        name:
+          type: string
+      required:
+      - name
+      - rule_id
+      - rule_version_id
+      - version
+    CompanyOutput:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        industry:
+          type: string
+        country:
+          type: string
+        bank_deposit:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,16}(?:\.\d{0,2})?$
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - bank_deposit
+      - country
+      - created_at
+      - id
+      - industry
+      - name
+    CompanyPage:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CompanyOutput'
+        next_cursor:
+          type: string
+          nullable: true
+      required:
+      - next_cursor
+      - results
+    CompanyWrite:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 200
+        industry:
+          type: string
+          maxLength: 200
+        country:
+          $ref: '#/components/schemas/CountryCode'
+        bank_deposit:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,16}(?:\.\d{0,2})?$
+      required:
+      - bank_deposit
+      - country
+      - industry
+      - name
+    ContractOutput:
+      type: object
+      properties:
+        id:
+          type: integer
+        worker_id:
+          type: integer
+        company_id:
+          type: integer
+        start_date:
+          type: string
+          format: date-time
+        end_date:
+          type: string
+          format: date-time
+        country:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - company_id
+      - country
+      - created_at
+      - end_date
+      - id
+      - start_date
+      - worker_id
+    ContractPage:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContractOutput'
+        next_cursor:
+          type: string
+          nullable: true
+      required:
+      - next_cursor
+      - results
+    ContractWrite:
+      type: object
+      properties:
+        worker_id:
+          type: integer
+          minimum: 1
+        company_id:
+          type: integer
+          minimum: 1
+        start_date:
+          type: string
+          format: date-time
+        end_date:
+          type: string
+          format: date-time
+        country:
+          $ref: '#/components/schemas/CountryCode'
+      required:
+      - company_id
+      - country
+      - end_date
+      - start_date
+      - worker_id
+    CountryCode:
+      enum:
+      - AD
+      - AE
+      - AF
+      - AG
+      - AI
+      - AL
+      - AM
+      - AO
+      - AQ
+      - AR
+      - AS
+      - AT
+      - AU
+      - AW
+      - AX
+      - AZ
+      - BA
+      - BB
+      - BD
+      - BE
+      - BF
+      - BG
+      - BH
+      - BI
+      - BJ
+      - BL
+      - BM
+      - BN
+      - BO
+      - BQ
+      - BR
+      - BS
+      - BT
+      - BV
+      - BW
+      - BY
+      - BZ
+      - CA
+      - CC
+      - CD
+      - CF
+      - CG
+      - CH
+      - CI
+      - CK
+      - CL
+      - CM
+      - CN
+      - CO
+      - CR
+      - CU
+      - CV
+      - CW
+      - CX
+      - CY
+      - CZ
+      - DE
+      - DJ
+      - DK
+      - DM
+      - DO
+      - DZ
+      - EC
+      - EE
+      - EG
+      - EH
+      - ER
+      - ES
+      - ET
+      - FI
+      - FJ
+      - FK
+      - FM
+      - FO
+      - FR
+      - GA
+      - GB
+      - GD
+      - GE
+      - GF
+      - GG
+      - GH
+      - GI
+      - GL
+      - GM
+      - GN
+      - GP
+      - GQ
+      - GR
+      - GS
+      - GT
+      - GU
+      - GW
+      - GY
+      - HK
+      - HM
+      - HN
+      - HR
+      - HT
+      - HU
+      - ID
+      - IE
+      - IL
+      - IM
+      - IN
+      - IO
+      - IQ
+      - IR
+      - IS
+      - IT
+      - JE
+      - JM
+      - JO
+      - JP
+      - KE
+      - KG
+      - KH
+      - KI
+      - KM
+      - KN
+      - KP
+      - KR
+      - KW
+      - KY
+      - KZ
+      - LA
+      - LB
+      - LC
+      - LI
+      - LK
+      - LR
+      - LS
+      - LT
+      - LU
+      - LV
+      - LY
+      - MA
+      - MC
+      - MD
+      - ME
+      - MF
+      - MG
+      - MH
+      - MK
+      - ML
+      - MM
+      - MN
+      - MO
+      - MP
+      - MQ
+      - MR
+      - MS
+      - MT
+      - MU
+      - MV
+      - MW
+      - MX
+      - MY
+      - MZ
+      - NA
+      - NC
+      - NE
+      - NF
+      - NG
+      - NI
+      - NL
+      - 'NO'
+      - NP
+      - NR
+      - NU
+      - NZ
+      - OM
+      - PA
+      - PE
+      - PF
+      - PG
+      - PH
+      - PK
+      - PL
+      - PM
+      - PN
+      - PR
+      - PS
+      - PT
+      - PW
+      - PY
+      - QA
+      - RE
+      - RO
+      - RS
+      - RU
+      - RW
+      - SA
+      - SB
+      - SC
+      - SD
+      - SE
+      - SG
+      - SH
+      - SI
+      - SJ
+      - SK
+      - SL
+      - SM
+      - SN
+      - SO
+      - SR
+      - SS
+      - ST
+      - SV
+      - SX
+      - SY
+      - SZ
+      - TC
+      - TD
+      - TF
+      - TG
+      - TH
+      - TJ
+      - TK
+      - TL
+      - TM
+      - TN
+      - TO
+      - TR
+      - TT
+      - TV
+      - TW
+      - TZ
+      - UA
+      - UG
+      - UM
+      - US
+      - UY
+      - UZ
+      - VA
+      - VC
+      - VE
+      - VG
+      - VI
+      - VN
+      - VU
+      - WF
+      - WS
+      - YE
+      - YT
+      - ZA
+      - ZM
+      - ZW
+      type: string
+      description: |-
+        * `AD` - AD
+        * `AE` - AE
+        * `AF` - AF
+        * `AG` - AG
+        * `AI` - AI
+        * `AL` - AL
+        * `AM` - AM
+        * `AO` - AO
+        * `AQ` - AQ
+        * `AR` - AR
+        * `AS` - AS
+        * `AT` - AT
+        * `AU` - AU
+        * `AW` - AW
+        * `AX` - AX
+        * `AZ` - AZ
+        * `BA` - BA
+        * `BB` - BB
+        * `BD` - BD
+        * `BE` - BE
+        * `BF` - BF
+        * `BG` - BG
+        * `BH` - BH
+        * `BI` - BI
+        * `BJ` - BJ
+        * `BL` - BL
+        * `BM` - BM
+        * `BN` - BN
+        * `BO` - BO
+        * `BQ` - BQ
+        * `BR` - BR
+        * `BS` - BS
+        * `BT` - BT
+        * `BV` - BV
+        * `BW` - BW
+        * `BY` - BY
+        * `BZ` - BZ
+        * `CA` - CA
+        * `CC` - CC
+        * `CD` - CD
+        * `CF` - CF
+        * `CG` - CG
+        * `CH` - CH
+        * `CI` - CI
+        * `CK` - CK
+        * `CL` - CL
+        * `CM` - CM
+        * `CN` - CN
+        * `CO` - CO
+        * `CR` - CR
+        * `CU` - CU
+        * `CV` - CV
+        * `CW` - CW
+        * `CX` - CX
+        * `CY` - CY
+        * `CZ` - CZ
+        * `DE` - DE
+        * `DJ` - DJ
+        * `DK` - DK
+        * `DM` - DM
+        * `DO` - DO
+        * `DZ` - DZ
+        * `EC` - EC
+        * `EE` - EE
+        * `EG` - EG
+        * `EH` - EH
+        * `ER` - ER
+        * `ES` - ES
+        * `ET` - ET
+        * `FI` - FI
+        * `FJ` - FJ
+        * `FK` - FK
+        * `FM` - FM
+        * `FO` - FO
+        * `FR` - FR
+        * `GA` - GA
+        * `GB` - GB
+        * `GD` - GD
+        * `GE` - GE
+        * `GF` - GF
+        * `GG` - GG
+        * `GH` - GH
+        * `GI` - GI
+        * `GL` - GL
+        * `GM` - GM
+        * `GN` - GN
+        * `GP` - GP
+        * `GQ` - GQ
+        * `GR` - GR
+        * `GS` - GS
+        * `GT` - GT
+        * `GU` - GU
+        * `GW` - GW
+        * `GY` - GY
+        * `HK` - HK
+        * `HM` - HM
+        * `HN` - HN
+        * `HR` - HR
+        * `HT` - HT
+        * `HU` - HU
+        * `ID` - ID
+        * `IE` - IE
+        * `IL` - IL
+        * `IM` - IM
+        * `IN` - IN
+        * `IO` - IO
+        * `IQ` - IQ
+        * `IR` - IR
+        * `IS` - IS
+        * `IT` - IT
+        * `JE` - JE
+        * `JM` - JM
+        * `JO` - JO
+        * `JP` - JP
+        * `KE` - KE
+        * `KG` - KG
+        * `KH` - KH
+        * `KI` - KI
+        * `KM` - KM
+        * `KN` - KN
+        * `KP` - KP
+        * `KR` - KR
+        * `KW` - KW
+        * `KY` - KY
+        * `KZ` - KZ
+        * `LA` - LA
+        * `LB` - LB
+        * `LC` - LC
+        * `LI` - LI
+        * `LK` - LK
+        * `LR` - LR
+        * `LS` - LS
+        * `LT` - LT
+        * `LU` - LU
+        * `LV` - LV
+        * `LY` - LY
+        * `MA` - MA
+        * `MC` - MC
+        * `MD` - MD
+        * `ME` - ME
+        * `MF` - MF
+        * `MG` - MG
+        * `MH` - MH
+        * `MK` - MK
+        * `ML` - ML
+        * `MM` - MM
+        * `MN` - MN
+        * `MO` - MO
+        * `MP` - MP
+        * `MQ` - MQ
+        * `MR` - MR
+        * `MS` - MS
+        * `MT` - MT
+        * `MU` - MU
+        * `MV` - MV
+        * `MW` - MW
+        * `MX` - MX
+        * `MY` - MY
+        * `MZ` - MZ
+        * `NA` - NA
+        * `NC` - NC
+        * `NE` - NE
+        * `NF` - NF
+        * `NG` - NG
+        * `NI` - NI
+        * `NL` - NL
+        * `NO` - NO
+        * `NP` - NP
+        * `NR` - NR
+        * `NU` - NU
+        * `NZ` - NZ
+        * `OM` - OM
+        * `PA` - PA
+        * `PE` - PE
+        * `PF` - PF
+        * `PG` - PG
+        * `PH` - PH
+        * `PK` - PK
+        * `PL` - PL
+        * `PM` - PM
+        * `PN` - PN
+        * `PR` - PR
+        * `PS` - PS
+        * `PT` - PT
+        * `PW` - PW
+        * `PY` - PY
+        * `QA` - QA
+        * `RE` - RE
+        * `RO` - RO
+        * `RS` - RS
+        * `RU` - RU
+        * `RW` - RW
+        * `SA` - SA
+        * `SB` - SB
+        * `SC` - SC
+        * `SD` - SD
+        * `SE` - SE
+        * `SG` - SG
+        * `SH` - SH
+        * `SI` - SI
+        * `SJ` - SJ
+        * `SK` - SK
+        * `SL` - SL
+        * `SM` - SM
+        * `SN` - SN
+        * `SO` - SO
+        * `SR` - SR
+        * `SS` - SS
+        * `ST` - ST
+        * `SV` - SV
+        * `SX` - SX
+        * `SY` - SY
+        * `SZ` - SZ
+        * `TC` - TC
+        * `TD` - TD
+        * `TF` - TF
+        * `TG` - TG
+        * `TH` - TH
+        * `TJ` - TJ
+        * `TK` - TK
+        * `TL` - TL
+        * `TM` - TM
+        * `TN` - TN
+        * `TO` - TO
+        * `TR` - TR
+        * `TT` - TT
+        * `TV` - TV
+        * `TW` - TW
+        * `TZ` - TZ
+        * `UA` - UA
+        * `UG` - UG
+        * `UM` - UM
+        * `US` - US
+        * `UY` - UY
+        * `UZ` - UZ
+        * `VA` - VA
+        * `VC` - VC
+        * `VE` - VE
+        * `VG` - VG
+        * `VI` - VI
+        * `VN` - VN
+        * `VU` - VU
+        * `WF` - WF
+        * `WS` - WS
+        * `YE` - YE
+        * `YT` - YT
+        * `ZA` - ZA
+        * `ZM` - ZM
+        * `ZW` - ZW
+    EligibleContract:
+      type: object
+      properties:
+        contract_id:
+          type: integer
+        worker_id:
+          type: integer
+      required:
+      - contract_id
+      - worker_id
+    EligibleContractsOutput:
+      type: object
+      properties:
+        company_id:
+          type: integer
+        rule_id:
+          type: integer
+        rule_version:
+          type: integer
+        check_id:
+          type: integer
+        rules:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/EligibleContract'
+        next_cursor:
+          type: string
+          nullable: true
+      required:
+      - company_id
+      - next_cursor
+      - results
+    EvaluateInput:
+      type: object
+      properties:
+        contract_id:
+          type: integer
+          minimum: 1
+      required:
+      - contract_id
+    EvaluationCondition:
+      type: object
+      properties:
+        path:
+          type: string
+        property:
+          type: string
+        operator:
+          type: string
+        expected:
+          nullable: true
+        actual:
+          nullable: true
+        status:
+          type: string
+        reason:
+          type: string
+        via:
+          type: array
+          items:
+            type: string
+      required:
+      - actual
+      - expected
+      - operator
+      - path
+      - property
+      - reason
+      - status
+    EvaluationOutput:
+      type: object
+      properties:
+        evaluation_id:
+          type: integer
+        outcome:
+          type: string
+        compliant:
+          type: boolean
+          readOnly: true
+          description: True only when outcome is COMPLIANT. False also includes INDETERMINATE.
+        as_of:
+          type: string
+          format: date-time
+        summary:
+          $ref: '#/components/schemas/EvaluationSummary'
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/RuleEvaluation'
+      required:
+      - as_of
+      - compliant
+      - evaluation_id
+      - outcome
+      - results
+      - summary
+    EvaluationSummary:
+      type: object
+      properties:
+        rules:
+          type: integer
+        passed:
+          type: integer
+        failed:
+          type: integer
+        unknown:
+          type: integer
+      required:
+      - failed
+      - passed
+      - rules
+      - unknown
+    RuleDependentOutput:
+      type: object
+      properties:
+        rule_id:
+          type: integer
+        version:
+          type: integer
+        name:
+          type: string
+        referenced_version:
+          type: integer
+      required:
+      - name
+      - referenced_version
+      - rule_id
+      - version
+    RuleEvaluation:
+      type: object
+      properties:
+        rule_id:
+          type: integer
+        version:
+          type: integer
+        status:
+          type: string
+        conditions:
+          type: array
+          items:
+            $ref: '#/components/schemas/EvaluationCondition'
+      required:
+      - conditions
+      - rule_id
+      - status
+      - version
+    RuleInput:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+          default: ''
+        definition:
+          description: Expression tree with conditions, AND/OR groups, and (when enabled)
+            rule_ref nodes containing a rule_id and optional version. The user. entity
+            prefix is accepted as an alias for worker. and stored canonically.
+      required:
+      - definition
+    RuleOutput:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+        current_version:
+          type: integer
+          nullable: true
+        definition:
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required:
+      - created_at
+      - current_version
+      - definition
+      - description
+      - id
+      - name
+      - status
+      - updated_at
+    RuleVersionOutput:
+      type: object
+      properties:
+        version:
+          type: integer
+        schema_version:
+          type: integer
+        definition: {}
+        created_by:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - created_at
+      - created_by
+      - definition
+      - schema_version
+      - version
+    WorkerOutput:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        date_of_birth:
+          type: string
+          format: date
+        nationality:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - created_at
+      - date_of_birth
+      - id
+      - name
+      - nationality
+    WorkerPage:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkerOutput'
+        next_cursor:
+          type: string
+          nullable: true
+      required:
+      - next_cursor
+      - results
+    WorkerWrite:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 200
+        date_of_birth:
+          type: string
+          format: date
+        nationality:
+          $ref: '#/components/schemas/CountryCode'
+      required:
+      - date_of_birth
+      - name
+      - nationality
+  securitySchemes:
+    TenantAPIKey:
+      type: http
+      scheme: bearer
+      bearerFormat: tenant-id.secret
